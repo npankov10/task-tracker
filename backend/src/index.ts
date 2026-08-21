@@ -1,5 +1,10 @@
 import express, { type Express, type Request, type Response } from 'express';
-import type { Task, CreateTaskBody, TaskParams } from './types/task.js';
+import type {
+  Task,
+  CreateTaskBody,
+  TaskParams,
+  UpdateTaskBody,
+} from './types/task.js';
 
 const app: Express = express();
 app.use(express.json());
@@ -72,6 +77,41 @@ app.get(
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: `Internal server error` });
+    }
+  },
+);
+
+app.patch(
+  '/tasks/:id',
+  (req: Request<TaskParams, {}, UpdateTaskBody>, res: Response) => {
+    const id = Number(req.params.id);
+    const { title, description, completed } = req.body;
+
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid id' });
+    }
+
+    try {
+      const task = tasks.find((item) => item.id === id);
+      if (!task) {
+        return res.status(404).json({ message: `Task with ${id} not found` });
+      }
+
+      if (title !== undefined && task.title !== title) {
+        task.title = title;
+      }
+      if (description !== undefined && task.description !== description) {
+        task.description = description;
+      }
+      if (completed !== undefined && task.completed !== completed) {
+        task.completed = completed;
+      }
+      res
+        .status(200)
+        .json({ message: `Task with ${id} changed successfully!`, task });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: 'Internal server error' });
     }
   },
 );

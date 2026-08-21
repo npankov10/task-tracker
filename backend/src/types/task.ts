@@ -13,3 +13,9 @@ export interface CreateTaskBody {
 export interface TaskParams {
   id: string;
 }
+
+export interface UpdateTaskBody {
+  title?: string;
+  description?: string;
+  completed?: boolean;
+}
