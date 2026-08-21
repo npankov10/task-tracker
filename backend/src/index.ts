@@ -116,6 +116,28 @@ app.patch(
   },
 );
 
+app.delete('/tasks/:id', (req: Request<TaskParams, {}, {}>, res: Response) => {
+  const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ message: 'Id not found' });
+  }
+
+  try {
+    const index = tasks.findIndex((item) => item.id === id);
+    if (index !== -1) {
+      const removed = tasks.splice(index, 1);
+      return res
+        .status(200)
+        .json({ message: `Task deleted successfully!`, removed: removed[0] });
+    } else {
+      return res.status(404).json({ message: `Task with id ${id} not found` });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Task Tracker API listening on port ${port}`);
 });
