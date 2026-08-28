@@ -4,6 +4,7 @@ import type {
   CreateTaskBody,
   TaskParams,
   UpdateTaskBody,
+  TaskParamsCompleted,
 } from './types/task.js';
 
 const app: Express = express();
@@ -137,6 +138,27 @@ app.delete('/tasks/:id', (req: Request<TaskParams, {}, {}>, res: Response) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+app.get(
+  '/tasks/completed/:status',
+  (req: Request<TaskParamsCompleted, {}, {}>, res: Response) => {
+    const completedStatus = req.params.status;
+    if (completedStatus !== 'true' && completedStatus !== 'false') {
+      return res.status(400).json({ message: `Status isn't correct` });
+    }
+
+    try {
+      const status = completedStatus === 'true';
+      const result = tasks.filter((item) => item.completed === status);
+      return res
+        .status(200)
+        .json({ message: `Requested task(s) returned`, result });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: `Internal server error` });
+    }
+  },
+);
 
 app.listen(port, () => {
   console.log(`Task Tracker API listening on port ${port}`);
