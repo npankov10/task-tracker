@@ -1,9 +1,17 @@
 {
   "compilerOptions": {
-    "module": "nodenext",
+    "module": "preserve",
     "target": "esnext",
     "strict": true,
-    "noEmit": true
+    "noEmit": true,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "types": [
+      "node"
+    ]
   },
-  "include": ["src"]
+  "include": [
+    "src",
+    "prisma7.config.ts"
+]
 }
