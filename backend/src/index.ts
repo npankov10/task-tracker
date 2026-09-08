@@ -6,6 +6,7 @@ import type {
   UpdateTaskBody,
   TaskParamsCompleted,
 } from './types/task.js';
+import prisma from './lib/prisma.js';
 
 const app: Express = express();
 app.use(express.json());
@@ -17,8 +18,14 @@ app.get('/', (req: Request, res: Response) => {
   res.json({ message: `Task Tracker API` });
 });
 
-app.get('/tasks', (req: Request, res: Response) => {
-  res.status(200).json({ tasks });
+app.get('/tasks', async (req: Request, res: Response) => {
+  try {
+    const tasks = await prisma.task.findMany();
+    res.status(200).json({ tasks });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: `Internal server error` });
+  }
 });
 
 app.post(
