@@ -56,31 +56,33 @@ app.post(
   },
 );
 
-// app.get(
-//   '/tasks/:id',
-//   async (req: Request<TaskParams, {}, {}>, res: Response) => {
-//     const id = Number(req.params.id);
+app.get(
+  '/tasks/:id',
+  async (req: Request<TaskParams, {}, {}>, res: Response) => {
+    const id = Number(req.params.id);
 
-//     if (Number.isNaN(id)) {
-//       return res.status(400).json({ message: `Invalid id` });
-//     }
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ message: `Invalid id` });
+    }
 
-//     try {
-//       const task = tasks.find((task) => task.id === id);
+    try {
+      const task = await prisma.task.findUnique({
+        where: {
+          id,
+        },
+      });
 
-//       if (task) {
-//         return res
-//           .status(200)
-//           .json({ message: `Task found successfully`, task });
-//       } else {
-//         return res.status(404).json({ message: `Task not found` });
-//       }
-//     } catch (error) {
-//       console.log(error);
-//       return res.status(500).json({ message: `Internal server error` });
-//     }
-//   },
-// );
+      if (!task) {
+        return res.status(404).json({ message: `Task not found` });
+      }
+
+      return res.status(200).json({ message: `Task found successfully`, task });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: `Internal server error` });
+    }
+  },
+);
 
 // app.patch(
 //   '/tasks/:id',
