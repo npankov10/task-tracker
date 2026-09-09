@@ -84,40 +84,46 @@ app.get(
   },
 );
 
-// app.patch(
-//   '/tasks/:id',
-//   (req: Request<TaskParams, {}, UpdateTaskBody>, res: Response) => {
-//     const id = Number(req.params.id);
-//     const { title, description, completed } = req.body;
+app.patch(
+  '/tasks/:id',
+  async (req: Request<TaskParams, {}, UpdateTaskBody>, res: Response) => {
+    const id = Number(req.params.id);
+    const { title, description, completed } = req.body;
 
-//     if (Number.isNaN(id)) {
-//       return res.status(400).json({ message: 'Invalid id' });
-//     }
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ message: 'Invalid id' });
+    }
+    const data: UpdateTaskBody = {};
+    if (title !== undefined) data.title = title;
+    if (description !== undefined) data.description = description;
+    if (completed !== undefined) data.completed = completed;
 
-//     try {
-//       const task = tasks.find((item) => item.id === id);
-//       if (!task) {
-//         return res.status(404).json({ message: `Task with ${id} not found` });
-//       }
+    try {
+      const task = await prisma.task.findUnique({
+        where: {
+          id,
+        },
+      });
 
-//       if (title !== undefined && task.title !== title) {
-//         task.title = title;
-//       }
-//       if (description !== undefined && task.description !== description) {
-//         task.description = description;
-//       }
-//       if (completed !== undefined && task.completed !== completed) {
-//         task.completed = completed;
-//       }
-//       res
-//         .status(200)
-//         .json({ message: `Task with ${id} changed successfully!`, task });
-//     } catch (error) {
-//       console.error(error);
-//       return res.status(500).json({ message: 'Internal server error' });
-//     }
-//   },
-// );
+      if (!task) {
+        return res.status(404).json({ message: `Task not found` });
+      }
+
+      const updatedTask = await prisma.task.update({
+        where: { id },
+        data,
+      });
+
+      res.status(200).json({
+        message: `Task with ${id} changed successfully!`,
+        updatedTask,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  },
+);
 
 // app.delete('/tasks/:id', (req: Request<TaskParams, {}, {}>, res: Response) => {
 //   const id = Number(req.params.id);
