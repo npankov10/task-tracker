@@ -43,18 +43,11 @@ app.post(
         .json({ message: `Title and description are required` });
     }
 
-    const newTask: Task = {
-      id: tasks.length + 1,
-      title,
-      description,
-      completed: false,
-    };
-
     try {
-      tasks.push(newTask);
+      const task = await prisma.task.create({ data: { title, description } });
       res.status(201).json({
         message: `New task successfully added`,
-        task: newTask,
+        task,
       });
     } catch (error) {
       console.log(error);
@@ -63,109 +56,109 @@ app.post(
   },
 );
 
-app.get(
-  '/tasks/:id',
-  async (req: Request<TaskParams, {}, {}>, res: Response) => {
-    const id = Number(req.params.id);
+// app.get(
+//   '/tasks/:id',
+//   async (req: Request<TaskParams, {}, {}>, res: Response) => {
+//     const id = Number(req.params.id);
 
-    if (Number.isNaN(id)) {
-      return res.status(400).json({ message: `Invalid id` });
-    }
+//     if (Number.isNaN(id)) {
+//       return res.status(400).json({ message: `Invalid id` });
+//     }
 
-    try {
-      const task = tasks.find((task) => task.id === id);
+//     try {
+//       const task = tasks.find((task) => task.id === id);
 
-      if (task) {
-        return res
-          .status(200)
-          .json({ message: `Task found successfully`, task });
-      } else {
-        return res.status(404).json({ message: `Task not found` });
-      }
-    } catch (error) {
-      console.log(error);
-      return res.status(500).json({ message: `Internal server error` });
-    }
-  },
-);
+//       if (task) {
+//         return res
+//           .status(200)
+//           .json({ message: `Task found successfully`, task });
+//       } else {
+//         return res.status(404).json({ message: `Task not found` });
+//       }
+//     } catch (error) {
+//       console.log(error);
+//       return res.status(500).json({ message: `Internal server error` });
+//     }
+//   },
+// );
 
-app.patch(
-  '/tasks/:id',
-  (req: Request<TaskParams, {}, UpdateTaskBody>, res: Response) => {
-    const id = Number(req.params.id);
-    const { title, description, completed } = req.body;
+// app.patch(
+//   '/tasks/:id',
+//   (req: Request<TaskParams, {}, UpdateTaskBody>, res: Response) => {
+//     const id = Number(req.params.id);
+//     const { title, description, completed } = req.body;
 
-    if (Number.isNaN(id)) {
-      return res.status(400).json({ message: 'Invalid id' });
-    }
+//     if (Number.isNaN(id)) {
+//       return res.status(400).json({ message: 'Invalid id' });
+//     }
 
-    try {
-      const task = tasks.find((item) => item.id === id);
-      if (!task) {
-        return res.status(404).json({ message: `Task with ${id} not found` });
-      }
+//     try {
+//       const task = tasks.find((item) => item.id === id);
+//       if (!task) {
+//         return res.status(404).json({ message: `Task with ${id} not found` });
+//       }
 
-      if (title !== undefined && task.title !== title) {
-        task.title = title;
-      }
-      if (description !== undefined && task.description !== description) {
-        task.description = description;
-      }
-      if (completed !== undefined && task.completed !== completed) {
-        task.completed = completed;
-      }
-      res
-        .status(200)
-        .json({ message: `Task with ${id} changed successfully!`, task });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: 'Internal server error' });
-    }
-  },
-);
+//       if (title !== undefined && task.title !== title) {
+//         task.title = title;
+//       }
+//       if (description !== undefined && task.description !== description) {
+//         task.description = description;
+//       }
+//       if (completed !== undefined && task.completed !== completed) {
+//         task.completed = completed;
+//       }
+//       res
+//         .status(200)
+//         .json({ message: `Task with ${id} changed successfully!`, task });
+//     } catch (error) {
+//       console.error(error);
+//       return res.status(500).json({ message: 'Internal server error' });
+//     }
+//   },
+// );
 
-app.delete('/tasks/:id', (req: Request<TaskParams, {}, {}>, res: Response) => {
-  const id = Number(req.params.id);
-  if (Number.isNaN(id)) {
-    return res.status(400).json({ message: 'Id not found' });
-  }
+// app.delete('/tasks/:id', (req: Request<TaskParams, {}, {}>, res: Response) => {
+//   const id = Number(req.params.id);
+//   if (Number.isNaN(id)) {
+//     return res.status(400).json({ message: 'Id not found' });
+//   }
 
-  try {
-    const index = tasks.findIndex((item) => item.id === id);
-    if (index !== -1) {
-      const removed = tasks.splice(index, 1);
-      return res
-        .status(200)
-        .json({ message: `Task deleted successfully!`, removed: removed[0] });
-    } else {
-      return res.status(404).json({ message: `Task with id ${id} not found` });
-    }
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-});
+//   try {
+//     const index = tasks.findIndex((item) => item.id === id);
+//     if (index !== -1) {
+//       const removed = tasks.splice(index, 1);
+//       return res
+//         .status(200)
+//         .json({ message: `Task deleted successfully!`, removed: removed[0] });
+//     } else {
+//       return res.status(404).json({ message: `Task with id ${id} not found` });
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
 
-app.get(
-  '/tasks/completed/:status',
-  (req: Request<TaskParamsCompleted, {}, {}>, res: Response) => {
-    const completedStatus = req.params.status;
-    if (completedStatus !== 'true' && completedStatus !== 'false') {
-      return res.status(400).json({ message: `Status isn't correct` });
-    }
+// app.get(
+//   '/tasks/completed/:status',
+//   (req: Request<TaskParamsCompleted, {}, {}>, res: Response) => {
+//     const completedStatus = req.params.status;
+//     if (completedStatus !== 'true' && completedStatus !== 'false') {
+//       return res.status(400).json({ message: `Status isn't correct` });
+//     }
 
-    try {
-      const status = completedStatus === 'true';
-      const result = tasks.filter((item) => item.completed === status);
-      return res
-        .status(200)
-        .json({ message: `Requested task(s) returned`, result });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: `Internal server error` });
-    }
-  },
-);
+//     try {
+//       const status = completedStatus === 'true';
+//       const result = tasks.filter((item) => item.completed === status);
+//       return res
+//         .status(200)
+//         .json({ message: `Requested task(s) returned`, result });
+//     } catch (error) {
+//       console.error(error);
+//       return res.status(500).json({ message: `Internal server error` });
+//     }
+//   },
+// );
 
 app.listen(port, () => {
   console.log(`Task Tracker API listening on port ${port}`);
