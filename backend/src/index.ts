@@ -4,7 +4,6 @@ import type {
   CreateTaskBody,
   TaskParams,
   UpdateTaskBody,
-  TaskParamsCompleted,
 } from './types/task.js';
 import prisma from './lib/prisma.js';
 
@@ -125,27 +124,37 @@ app.patch(
   },
 );
 
-// app.delete('/tasks/:id', (req: Request<TaskParams, {}, {}>, res: Response) => {
-//   const id = Number(req.params.id);
-//   if (Number.isNaN(id)) {
-//     return res.status(400).json({ message: 'Id not found' });
-//   }
+app.delete(
+  '/tasks/:id',
+  async (req: Request<TaskParams, {}, {}>, res: Response) => {
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ message: `Invalid ID` });
+    }
 
-//   try {
-//     const index = tasks.findIndex((item) => item.id === id);
-//     if (index !== -1) {
-//       const removed = tasks.splice(index, 1);
-//       return res
-//         .status(200)
-//         .json({ message: `Task deleted successfully!`, removed: removed[0] });
-//     } else {
-//       return res.status(404).json({ message: `Task with id ${id} not found` });
-//     }
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({ message: 'Internal server error' });
-//   }
-// });
+    try {
+      const task = await prisma.task.findUnique({
+        where: {
+          id,
+        },
+      });
+
+      if (task) {
+        const deletedTask = await prisma.task.delete({ where: { id } });
+        return res
+          .status(200)
+          .json({ message: `Task deleted successfully!`, deletedTask });
+      } else {
+        return res
+          .status(404)
+          .json({ message: `Task with id ${id} not found` });
+      }
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  },
+);
 
 // app.get(
 //   '/tasks/completed/:status',
