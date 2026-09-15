@@ -18,6 +18,10 @@ export interface TaskParamsCompleted {
   status: string;
 }
 
+export interface TaskParamsType {
+  query: string;
+}
+
 export interface UpdateTaskBody {
   title?: string;
   description?: string;

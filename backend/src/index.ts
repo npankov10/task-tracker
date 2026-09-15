@@ -4,6 +4,7 @@ import type {
   TaskParams,
   UpdateTaskBody,
   TaskParamsCompleted,
+  TaskParamsType,
 } from './types/task.js';
 import prisma from './lib/prisma.js';
 
@@ -170,6 +171,34 @@ app.get(
       return res
         .status(200)
         .json({ message: `Requested task(s) returned`, tasks });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: `Internal server error` });
+    }
+  },
+);
+
+app.get(
+  '/tasks/search/:query',
+  async (req: Request<TaskParamsType, {}, {}>, res: Response) => {
+    const query = req.params.query;
+    if (query === '' || query.trim() === '') {
+      return res.status(400).json({ message: `Search query is required` });
+    }
+
+    try {
+      const tasksPrisma = await prisma.task.findMany({
+        where: {
+          title: {
+            contains: query,
+            mode: 'insensitive',
+          },
+        },
+      });
+      return res.status(200).json({
+        message: `Tasks containing "${query}" successfully returned`,
+        tasksPrisma,
+      });
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: `Internal server error` });
