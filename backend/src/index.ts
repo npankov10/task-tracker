@@ -1,12 +1,16 @@
 import express, { type Express, type Request, type Response } from 'express';
 import type {
-  CreateTaskBody,
   TaskParams,
-  UpdateTaskBody,
   TaskParamsCompleted,
   TaskParamsType,
 } from './types/task.js';
 import prisma from './lib/prisma.js';
+import {
+  createTaskSchema,
+  UpdateTaskBody,
+  CreateTaskBody,
+  updateTaskSchema,
+} from './schemas/task.schema.js';
 
 const app: Express = express();
 app.use(express.json());
@@ -29,20 +33,16 @@ app.get('/tasks', async (req: Request, res: Response) => {
 app.post(
   '/tasks',
   async (req: Request<{}, {}, CreateTaskBody>, res: Response) => {
-    const { title, description } = req.body;
-    if (
-      !title ||
-      title.trim() === '' ||
-      !description ||
-      description.trim() === ''
-    ) {
+    const result = createTaskSchema.safeParse(req.body);
+
+    if (!result.success) {
       return res
         .status(400)
         .json({ message: `Title and description are required` });
     }
 
     try {
-      const task = await prisma.task.create({ data: { title, description } });
+      const task = await prisma.task.create({ data: result.data });
       res.status(201).json({
         message: `New task successfully added`,
         task,
@@ -86,15 +86,15 @@ app.patch(
   '/tasks/:id',
   async (req: Request<TaskParams, {}, UpdateTaskBody>, res: Response) => {
     const id = Number(req.params.id);
-    const { title, description, completed } = req.body;
+    const data = updateTaskSchema.safeParse(req.body);
 
     if (Number.isNaN(id)) {
       return res.status(400).json({ message: 'Invalid id' });
     }
-    const data: UpdateTaskBody = {};
-    if (title !== undefined) data.title = title;
-    if (description !== undefined) data.description = description;
-    if (completed !== undefined) data.completed = completed;
+
+    if (!data.success) {
+      return res.status(400).json({ message: `Check your data` });
+    }
 
     try {
       const task = await prisma.task.findUnique({
@@ -109,7 +109,7 @@ app.patch(
 
       const updatedTask = await prisma.task.update({
         where: { id },
-        data,
+        data: data.data,
       });
 
       res.status(200).json({
