@@ -11,4 +11,5 @@ model Task {
   title       String
   description String
   completed   Boolean @default(false)
+  priority    String  @default("medium")
 }
