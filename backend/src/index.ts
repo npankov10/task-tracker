@@ -11,6 +11,11 @@ import {
   CreateTaskBody,
   updateTaskSchema,
 } from './schemas/task.schema.js';
+import {
+  CreateProjectBody,
+  createProjectSchema,
+} from './schemas/project.schema.js';
+import { Prisma } from '@prisma/client';
 
 const app: Express = express();
 app.use(express.json());
@@ -30,6 +35,18 @@ app.get('/tasks', async (req: Request, res: Response) => {
   }
 });
 
+app.get('/projects', async (req: Request, res: Response) => {
+  try {
+    const projects = await prisma.project.findMany({
+      select: { name: true, tasks: { select: { title: true } } },
+    });
+    res.status(200).json({ projects });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: `Internal server error` });
+  }
+});
+
 app.post(
   '/tasks',
   async (req: Request<{}, {}, CreateTaskBody>, res: Response) => {
@@ -42,14 +59,53 @@ app.post(
     }
 
     try {
-      const task = await prisma.task.create({ data: result.data });
+      const task = await prisma.task.create({
+        data: {
+          title: result.data.title,
+          description: result.data.description,
+          priority: result.data.priority,
+          project: {
+            connect: {
+              id: result.data.projectId,
+            },
+          },
+        },
+      });
       res.status(201).json({
         message: `New task successfully added`,
         task,
       });
     } catch (error) {
-      console.log(error);
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return res.status(404).json({
+          message: 'Project not found',
+        });
+      }
+      console.error(error);
       return res.status(500).json({ message: `500 Internal Server Error` });
+    }
+  },
+);
+
+app.post(
+  '/projects',
+  async (req: Request<{}, {}, CreateProjectBody>, res: Response) => {
+    const result = createProjectSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ message: `Invalid project name` });
+    }
+
+    try {
+      const project = await prisma.project.create({ data: result.data });
+      res
+        .status(201)
+        .json({ message: `New project successfully added`, project });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: `500 Internal server error` });
     }
   },
 );
