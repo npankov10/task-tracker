@@ -47,6 +47,28 @@ app.get('/projects', async (req: Request, res: Response) => {
   }
 });
 
+app.get('/projects/:id', async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ message: 'Invalid project ID' });
+  }
+  try {
+    const project = await prisma.project.findUnique({
+      where: { id },
+      include: { tasks: true },
+    });
+    if (project === null) {
+      return res.status(404).json({ message: `Project not found` });
+    }
+    return res
+      .status(200)
+      .json({ message: `Project with ID-${id} found`, project });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: `Internal server error` });
+  }
+});
+
 app.post(
   '/tasks',
   async (req: Request<{}, {}, CreateTaskBody>, res: Response) => {
@@ -178,6 +200,8 @@ app.patch(
     }
   },
 );
+
+app;
 
 app.delete(
   '/tasks/:id',
