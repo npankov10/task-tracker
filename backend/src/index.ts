@@ -38,7 +38,7 @@ app.get('/tasks', async (req: Request, res: Response) => {
 app.get('/projects', async (req: Request, res: Response) => {
   try {
     const projects = await prisma.project.findMany({
-      select: { name: true, tasks: { select: { title: true } } },
+      select: { name: true, id: true, tasks: { select: { title: true } } },
     });
     res.status(200).json({ projects });
   } catch (error) {
@@ -122,7 +122,7 @@ app.post(
 
     try {
       const project = await prisma.project.create({ data: result.data });
-      res
+      return res
         .status(201)
         .json({ message: `New project successfully added`, project });
     } catch (error) {
@@ -201,7 +201,39 @@ app.patch(
   },
 );
 
-app;
+app.patch('/projects/:id', async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const result = createProjectSchema.safeParse(req.body);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ message: `Invalid project ID` });
+  }
+  if (!result.success) {
+    return res.status(400).json({ message: `Invalid project name` });
+  }
+
+  try {
+    const updatedProject = await prisma.project.update({
+      where: { id },
+      data: { name: result.data.name },
+    });
+    return res.status(200).json({
+      message: `Project name with ${id} changed succcessfully`,
+      project: updatedProject,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2025'
+    ) {
+      return res.status(404).json({
+        message: 'Project not found',
+      });
+    }
+    console.error(error);
+    return res.status(500).json({ message: `Internal server error` });
+  }
+});
 
 app.delete(
   '/tasks/:id',
@@ -234,6 +266,42 @@ app.delete(
     }
   },
 );
+
+app.delete('/projects/:id', async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ message: `Invalid project ID` });
+  }
+
+  try {
+    const project = await prisma.project.findUnique({ where: { id } });
+    if (!project) {
+      return res.status(404).json({ message: `Project not found` });
+    }
+    const taskCount = await prisma.task.count({ where: { projectId: id } });
+    if (taskCount > 0) {
+      return res
+        .status(409)
+        .json({ message: `Can't delete the project containing tasks` });
+    }
+
+    const deletedProject = await prisma.project.delete({ where: { id } });
+    return res
+      .status(200)
+      .json({ message: `Project deleted successfully`, deletedProject });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2003'
+    ) {
+      return res.status(409).json({
+        message: 'Cannot delete a project containing tasks',
+      });
+    }
+    console.error(error);
+    return res.status(500).json({ message: `Internal server error` });
+  }
+});
 
 app.get(
   '/tasks/completed/:status',
