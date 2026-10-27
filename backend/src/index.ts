@@ -27,7 +27,7 @@ app.get('/', (req: Request, res: Response) => {
 
 app.get('/tasks', async (req: Request, res: Response) => {
   try {
-    const tasks = await prisma.task.findMany();
+    const tasks = await prisma.task.findMany({ include: { project: true } });
     res.status(200).json({ tasks });
   } catch (error) {
     console.error(error);
@@ -137,7 +137,7 @@ app.get(
   async (req: Request<TaskParams, {}, {}>, res: Response) => {
     const id = Number(req.params.id);
 
-    if (Number.isNaN(id)) {
+    if (!Number.isInteger(id) || id <= 0) {
       return res.status(400).json({ message: `Invalid id` });
     }
 
@@ -166,7 +166,7 @@ app.patch(
     const id = Number(req.params.id);
     const data = updateTaskSchema.safeParse(req.body);
 
-    if (Number.isNaN(id)) {
+    if (!Number.isInteger(id) || id <= 0) {
       return res.status(400).json({ message: 'Invalid id' });
     }
 
@@ -195,6 +195,21 @@ app.patch(
         updatedTask,
       });
     } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        return res.status(404).json({
+          message: 'Project not found',
+        });
+      } else if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return res.status(404).json({
+          message: 'Task not found',
+        });
+      }
       console.error(error);
       return res.status(500).json({ message: 'Internal server error' });
     }
@@ -239,7 +254,7 @@ app.delete(
   '/tasks/:id',
   async (req: Request<TaskParams, {}, {}>, res: Response) => {
     const id = Number(req.params.id);
-    if (Number.isNaN(id)) {
+    if (!Number.isInteger(id) || id <= 0) {
       return res.status(400).json({ message: `Invalid ID` });
     }
 
@@ -261,6 +276,14 @@ app.delete(
           .json({ message: `Task with id ${id} not found` });
       }
     } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return res.status(404).json({
+          message: 'Task not found',
+        });
+      }
       console.error(error);
       return res.status(500).json({ message: 'Internal server error' });
     }
