@@ -1,4 +1,6 @@
 import express, { type Express, type Request, type Response } from 'express';
+import cors from 'cors';
+
 import type {
   TaskParams,
   TaskParamsCompleted,
@@ -20,6 +22,12 @@ import { Prisma } from '@prisma/client';
 const app: Express = express();
 app.use(express.json());
 const port = 3001;
+
+app.use(
+  cors({
+    origin: 'http://localhost:5173',
+  }),
+);
 
 app.get('/', (req: Request, res: Response) => {
   res.json({ message: `Task Tracker API` });
