@@ -2,62 +2,119 @@ import { Plus } from 'lucide-react';
 import { Header } from './Header';
 import { Button } from './ui/button';
 import TaskItem from './TaskItem';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Input } from './ui/input';
 
 type TaskFilter = 'all' | 'active' | 'completed';
 const filterItems: TaskFilter[] = ['all', 'active', 'completed'];
 
+type Task = {
+  id: number;
+  title: string;
+  completed: boolean;
+};
+
+type TaskResponse = {
+  tasks: Task[];
+};
+
 const AllTasks = () => {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [filter, setFilter] = useState<TaskFilter>('all');
-  const [allTasks, setAllTasks] = useState([
-    {
-      id: 0,
-      title: 'Learn React',
-      completed: true,
-    },
-    {
-      id: 1,
-      title: 'Learn Prisma',
-      completed: false,
-    },
-  ]);
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/tasks');
+        if (!response.ok) {
+          throw new Error(`HTTP Error: ${response.status}`);
+        }
+
+        const tasks: TaskResponse = await response.json();
+        setAllTasks(tasks.tasks);
+      } catch (error) {
+        console.error('Failed to fetch tasks: ', error);
+      }
+    };
+
+    fetchTasks();
+  }, []);
+
   const totalTasks = allTasks.length;
   const completedTasks = allTasks.filter((task) => task.completed).length;
   const activeTasks = allTasks.filter((task) => !task.completed).length;
 
-  const toggleTask = (id: number) => {
-    setAllTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task,
-      ),
-    );
+  const toggleTask = async (id: number) => {
+    try {
+      const task = allTasks.find((task) => task.id === id);
+      if (!task) {
+        console.log(`Task wasn't found`);
+        return;
+      }
+
+      const response = await fetch(`http://localhost:3001/tasks/${id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        method: 'PATCH',
+        body: JSON.stringify({ completed: !task.completed }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+      setAllTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === id ? { ...task, completed: !task.completed } : task,
+        ),
+      );
+    } catch (error) {
+      console.error('Failed to update the task: ', error);
+    }
   };
-  const addTask = (
+
+  const addTask = async (
     event: React.SyntheticEvent<HTMLFormElement>,
     task: string,
   ) => {
     event.preventDefault();
-    if (!task.trim()) return;
+    const title = task.trim();
+    if (!title) return;
 
-    setAllTasks((prevTasks) => {
-      const ids = prevTasks.map((item) => item.id);
-      const nextId = ids.length > 0 ? Math.max(...ids) + 1 : 0;
+    try {
+      const response = await fetch('http://localhost:3001/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ projectId: 1, title, description: title }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+      const data = await response.json();
+      setAllTasks((prevTasks) => {
+        return [...prevTasks, data.task];
+      });
 
-      const newTask = {
-        id: nextId,
-        title: task.trim(),
-        completed: false,
-      };
-
-      return [...prevTasks, newTask];
-    });
-    setNewTaskTitle('');
+      setNewTaskTitle('');
+    } catch (error) {
+      console.error('Failed to add the task: ', error);
+    }
   };
 
-  const deleteTask = (id: number) => {
-    setAllTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+  const deleteTask = async (id: number) => {
+    try {
+      const response = await fetch(`http://localhost:3001/tasks/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+      setAllTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+    } catch (error) {
+      console.error('Failed to delete the task: ', error);
+    }
   };
 
   const filteredTasks = allTasks.filter((task) => {
